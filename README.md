@@ -115,7 +115,60 @@ Full tables with standard deviations, held-out test scores and hit-optimum count
 4. Validate constructor args (`pruning_strategy`, `max_evaluations >= 1`, `initial_points >= 1`) (#7–9).
 5. Consider a default `early_stopping_patience` tied to budget (for example 25% of `max_evaluations`) rather than a fixed 5.
 6. Optionally parallelise across candidates or folds. It is the easiest wall-clock win available.
-7. For "heavy-weight tuning" claims, see [`large/README.md`](large/README.md). The key items are no full-grid enumeration, a budget-aware early-stopping patience, and restarts when the climb stalls.
+7. For design-level and large-space suggestions, see [Beyond bug fixes](#beyond-bug-fixes-making-the-idea-stronger) below and [`large/README.md`](large/README.md).
+
+## Beyond bug fixes: making the idea stronger
+
+The bug fixes above make AGS *reliable*. They don't make it *competitive*. This section collects the design-level suggestions from the testing rounds, ordered by expected impact. Items marked *(interpretation)* are the tester's judgement, not measured results.
+
+### Where the method loses today (measured)
+
+- **It only searches around one point.** After the 8 random starts, every evaluation is a neighbour of the single current best point (or, when those are all checked, of the rings 2–4 steps out). In 8 dimensions, over 90% of evaluations stayed within 2 steps of the current best, and none went more than 3 steps away ([`large/results/locality.md`](large/results/locality.md)). It climbs whichever hill it starts on.
+- **Early stopping counts any 5 misses in a row.** The run stops after 5 consecutive evaluations that don't strictly beat the best score. Pruned candidates and ties count as misses. The best point has 14 direct neighbours in 7 dimensions, so AGS can quit after checking only 5 of them. Measured stops: a median of 16–27 evaluations in total.
+- **For comparison, Optuna's TPE** (checked in the Optuna 5.0 source) starts with 10 random trials. After that, each round it draws 24 candidates around *all* of its top ~10% of trials and picks the one the good/bad density ratio favours most. Several promising regions stay in play at once. That is why it recovered from bad starts where AGS did not.
+
+### Search strategy (highest impact)
+
+1. **Restarts.** After K evaluations without improvement, jump to a new random point and climb again, keeping the best result overall. This is cheap and targets the stuck seeds directly.
+2. **Climb from several good points**, not just the single best. For example, round-robin over the top 3–5. This is the step that moves AGS toward Optuna's "keep several regions in play".
+3. **Mix in global picks.** Every N-th evaluation, score a random sample of the whole grid with the surrogate and take the best. Today the whole-grid fallback never runs in practice (see above).
+4. **Dimension-aware early stopping.** Use a patience of at least 2 × the number of parameters (one full ring of neighbours), or a share of the budget such as 25%. Or turn it off by default.
+5. **Let the surrogate decide more.** TPE and GP runs picked the same final configs in two tasks: the neighbour rule decides the destination and the surrogate only decides the order. Using TPE the way it is designed (sample candidates around the good points, rank them by the good/bad density ratio) instead of a made-up mean ± std is worth trying.
+
+### Scale and speed
+
+6. **Don't enumerate the grid.** Generate random points and neighbours from indices on the fly. This removes the roughly 10⁸-point memory ceiling (bug #10).
+7. **Parallelise** across folds or candidates. Everything is single-core today (estimator `n_jobs` is forced to 1). This is the easiest wall-clock win.
+8. **Keep fold pruning.** It saved 4–12% of folds with no measured loss in quality. It's modest, but it's the feature that most sets AGS apart from other tools.
+
+### Scope
+
+9. **Continuous and log-scale ranges** (such as a learning rate anywhere in 1e-3 to 1) in addition to fixed lists, so users aren't forced to discretise.
+10. **True categorical handling.** Today `["gini", "entropy", "log_loss"]` and `[..., None]` get a made-up order and distance.
+
+### Positioning *(interpretation)*
+
+Every part of AGS already exists somewhere: TPE (Optuna, Hyperopt), local hill climbing, and early quitting of candidates (Optuna pruners, Hyperband, `HalvingGridSearchCV`). The new part is the combination, packaged as a drop-in replacement for `GridSearchCV`. There are three possible directions:
+
+| Direction | What it means | Assessment |
+|---|---|---|
+| **A. Smart `GridSearchCV`** | Fix the bugs, add restarts and dimension-aware patience, stay a simple drop-in replacement | Small but real niche: grid-search users with grids too big to search exhaustively. Doesn't need to beat Optuna. |
+| **B. Optuna sampler plugin** | Rebuild "local steps plus occasional jumps" as a custom Optuna sampler | Probably the highest impact: the idea gets judged on Optuna's tooling and reaches its users. Close to "trust-region" / local Bayesian optimisation in research (for example TuRBO), which is not in Optuna's default sampler. |
+| **C. Full jumping, standalone** | Replace neighbour steps with jumps anywhere | Mostly re-implements TPE. Hard to win against a mature library. |
+
+### How to tell whether a change helped
+
+Re-run this repo's benchmarks on each new version. They report the same metrics and use the same seeds:
+
+```bash
+pytest -q tests                                                 # bug tests flip to XPASS when fixed
+cd bench && python run_benchmark.py && python analyze.py        # small grids vs grid/random/Optuna
+cd ../large && python synthetic_bench.py && python real_large.py && python locality_probe.py && python analyze_large.py
+```
+
+What would count as a clear win:
+- On the real 103,680-config task, test AUC at least matching random search at every budget and within Optuna's seed spread (±0.001) at 150 evaluations.
+- In `locality.md`, a meaningful share of evaluations more than 3 steps from the current best.
 
 ## Files
 
