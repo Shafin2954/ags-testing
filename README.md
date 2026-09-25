@@ -8,7 +8,8 @@ Tested on 2026-09-25. Environment: cloud Linux container, 4 CPU, no GPU. Python 
 - **Works.** Core search is correct: with full budget and no pruning it returns exactly what `GridSearchCV` returns (tested config by config).
 - **vs grid search: claim holds on cost.** Using 1%–50% of grid's configs (depending on task and settings), AGS picked configs within about 0.002–0.01 reference-CV score of the grid optimum, and its held-out test scores were in the same range as grid's. On `tree_cancer` grid's pick scored *lower* on test (0.895) than every sampler's average (about 0.92–0.93). Interpretation: exhaustive search over-fits the CV estimate.
 - **vs random search and Optuna: no clear edge.** At the same budget of unique configs, AGS (no early stop) had lower mean regret than random on 2 of 4 tasks (clearly on `knn_housing`, marginally on `svc_digits`) and higher on 2 (`tree_cancer`, `hgb_synth`). Optuna TPE was at least as good as AGS on 3 of 4. Differences are small and 10 seeds is not enough to call most of them significant. This agrees with the author's own claim ("not yet better than Optuna").
-- **9 bugs or gaps found**, each pinned by a test in `tests/test_ags.py`. Most important: `fit()` does not reset state, and `optimistic` pruning is unsafe with a callable scorer.
+- **10 bugs or gaps found.** Nine are pinned by a test in `tests/test_ags.py`. Most important: `fit()` does not reset state, `optimistic` pruning is unsafe with a callable scorer, and the whole grid is held in memory (#10).
+- **Round 2, large spaces ([`large/`](large/README.md)):** AGS beats random search clearly on big smooth synthetic grids but trails Optuna. On a real 103,680-config boosting grid it came last (test AUC 0.8808 vs random 0.8832 vs Optuna 0.8878). Default early stopping stops it after about 20 evaluations. Grids of about 10⁸ points run out of memory.
 
 ## What was tested
 
@@ -42,6 +43,7 @@ Each has a test that asserts the *correct* behaviour and is marked `xfail(strict
 | 7 | Low | Typo in `pruning_strategy` (for example `"optimstic"`) is silently accepted and pruning just turns off. | `test_unknown_pruning_strategy_rejected` |
 | 8 | Low | `initial_points=0` crashes with `max() arg is an empty sequence`. | `test_initial_points_zero` |
 | 9 | Low | `max_evaluations=0` crashes with the same unclear error instead of a clear `ValueError`. | `test_max_evaluations_zero_gives_clear_error` |
+| 10 | Medium | `__init__` lists every grid point up front (about 100 B per point). 10⁷ points use 1.1 GB and take 4.5 s before the first evaluation; 10⁸ points raise MemoryError. | [`large/scaling_probe.py`](large/scaling_probe.py) (no unit test: it would need about 11 GB of RAM) |
 
 Design notes. These are observations, not bugs:
 
@@ -113,7 +115,7 @@ Full tables with standard deviations, held-out test scores and hit-optimum count
 4. Validate constructor args (`pruning_strategy`, `max_evaluations >= 1`, `initial_points >= 1`) (#7–9).
 5. Consider a default `early_stopping_patience` tied to budget (for example 25% of `max_evaluations`) rather than a fixed 5.
 6. Optionally parallelise across candidates or folds. It is the easiest wall-clock win available.
-7. For "heavy-weight tuning" claims, add a benchmark with a larger, more continuous space. The current design is limited to a discrete grid.
+7. For "heavy-weight tuning" claims, see [`large/README.md`](large/README.md). The key items are no full-grid enumeration, a budget-aware early-stopping patience, and restarts when the climb stalls.
 
 ## Files
 
@@ -126,4 +128,5 @@ ags-testing/
   bench/run_benchmark.py
   bench/analyze.py
   results/              truth tables, runs.csv, curves.csv, summary, plot, log
+  large/                round 2: scaling probe, synthetic + real large-space benchmarks
 ```
