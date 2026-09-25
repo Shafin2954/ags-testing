@@ -1,0 +1,47 @@
+grid 16^4 = 65,536 done in 15s
+budget                             50       100      200
+func        method                                      
+low_eff_dim ags_no_early_stop 1.17e-02 7.81e-03 7.81e-03
+            optuna_tpe        1.95e-03 1.95e-03 3.91e-03
+            random            1.95e-02 7.81e-03 5.86e-03
+rastrigin   ags_no_early_stop 1.31e-02 7.38e-03 1.22e-03
+            optuna_tpe        1.42e-03 1.75e-04 1.53e-05
+            random            1.04e-02 6.31e-03 4.33e-03
+rosenbrock  ags_default       9.95e-02      NaN      NaN
+            ags_no_early_stop 1.08e-03 1.22e-04 6.10e-05
+            optuna_tpe        5.57e-04 1.30e-04 1.53e-05
+            random            1.62e-02 1.21e-02 4.02e-03
+sphere      ags_default       2.66e-01 5.46e-02      NaN
+            ags_no_early_stop 1.84e-03 3.05e-04 5.34e-05
+            optuna_tpe        3.28e-04 2.14e-04 7.63e-05
+            random            2.85e-02 1.75e-02 7.26e-03
+grid 10^6 = 1,000,000 done in 29s
+budget                             50       100      200
+func        method                                      
+low_eff_dim ags_no_early_stop 0.00e+00 0.00e+00 0.00e+00
+            optuna_tpe        0.00e+00 0.00e+00 0.00e+00
+            random            1.00e-02 1.00e-02 0.00e+00
+rastrigin   ags_no_early_stop 3.63e-03 2.80e-04 1.42e-04
+            optuna_tpe        1.64e-04 3.00e-06 1.00e-06
+            random            1.04e-02 8.03e-03 3.49e-03
+rosenbrock  ags_no_early_stop 1.12e-03 2.80e-05 2.00e-06
+            optuna_tpe        3.96e-04 1.10e-05 3.00e-06
+            random            2.10e-02 9.60e-03 3.91e-03
+sphere      ags_no_early_stop 3.27e-03 2.50e-06 2.00e-06
+            optuna_tpe        3.83e-04 1.50e-06 2.00e-06
+            random            1.17e-02 6.36e-03 4.70e-03
+grid 8^8 = 16,777,216 done in 229s
+budget                             50       100      200
+func        method                                      
+low_eff_dim ags_no_early_stop 0.00e+00 0.00e+00 0.00e+00
+            optuna_tpe        0.00e+00 0.00e+00 0.00e+00
+            random            1.56e-02 7.81e-03 0.00e+00
+rastrigin   ags_no_early_stop 1.18e-03 3.28e-04 3.05e-05
+            optuna_tpe        1.04e-03 2.58e-05 3.28e-07
+            random            1.78e-02 8.94e-03 6.77e-03
+rosenbrock  ags_no_early_stop 2.23e-03 2.14e-04 5.96e-08
+            optuna_tpe        4.97e-04 5.10e-05 2.38e-07
+            random            1.01e-02 4.53e-03 4.36e-03
+sphere      ags_no_early_stop 6.57e-03 9.11e-04 3.19e-06
+            optuna_tpe        2.54e-05 6.56e-07 5.36e-07
+            random            9.24e-03 4.90e-03 2.91e-03
