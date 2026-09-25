@@ -1,0 +1,48 @@
+[svc_digits] grid=121 budget=40 truth ready (6s)
+                      regret    test  n_evals  folds     wall
+method                                                       
+ags_default           0.0047  0.9888     15.0   74.7   1.4093
+ags_gp_no_stop        0.0024  0.9892     40.0  175.2   4.7452
+ags_no_early_stop     0.0024  0.9892     40.0  177.3   3.2664
+ags_no_prune_no_stop  0.0024  0.9892     40.0  200.0   3.8015
+grid_search           0.0000  0.9880    121.0  605.0  13.2064
+optuna_tpe            0.0020  0.9900     40.0  200.0   5.5249
+random                0.0027  0.9912     40.0  200.0   4.5397
+[svc_digits] done in 66s
+
+[tree_cancer] grid=1200 budget=60 truth ready (12s)
+                      regret    test  n_evals   folds     wall
+method                                                        
+ags_default           0.0098  0.9245     14.1    70.0   0.3547
+ags_gp_no_stop        0.0078  0.9224     60.0   271.4   3.6642
+ags_no_early_stop     0.0077  0.9217     60.0   268.4   1.3150
+ags_no_prune_no_stop  0.0087  0.9252     60.0   300.0   1.4688
+grid_search           0.0000  0.8951   1200.0  6000.0  36.3636
+optuna_tpe            0.0113  0.9238     60.0   300.0   1.7153
+random                0.0056  0.9280     60.0   300.0   1.3977
+[tree_cancer] done in 37s
+
+[hgb_synth] grid=300 budget=40 truth ready (41s)
+                      regret    test  n_evals   folds      wall
+method                                                         
+ags_default           0.0057  0.9680     19.0    93.2    8.6108
+ags_gp_no_stop        0.0052  0.9666     40.0   180.5   21.4878
+ags_no_early_stop     0.0054  0.9670     40.0   180.2   18.4573
+ags_no_prune_no_stop  0.0050  0.9669     40.0   200.0   20.1643
+grid_search           0.0000  0.9699    300.0  1500.0  130.0792
+optuna_tpe            0.0037  0.9689     40.0   200.0   22.8897
+random                0.0038  0.9692     40.0   200.0   16.5501
+[hgb_synth] done in 321s
+
+[knn_housing] grid=48 budget=24 truth ready (0s)
+                      regret    test  n_evals  folds    wall
+method                                                      
+ags_default           0.0027 -0.3337     16.8   84.0  1.1756
+ags_gp_no_stop        0.0027 -0.3337     24.0  113.9  2.3382
+ags_no_early_stop     0.0027 -0.3337     24.0  114.7  1.6288
+ags_no_prune_no_stop  0.0027 -0.3337     24.0  120.0  1.6429
+grid_search           0.0000 -0.3363     48.0  240.0  3.5455
+optuna_tpe            0.0020 -0.3343     24.0  120.0  1.8562
+random                0.0048 -0.3349     24.0  120.0  1.8446
+[knn_housing] done in 28s
+

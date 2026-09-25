@@ -1,0 +1,8 @@
+adaptive-greedy-search==2.0.0
+scikit-learn>=1.3
+numpy
+pandas
+optuna>=4
+joblib
+matplotlib
+pytest
