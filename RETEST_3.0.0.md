@@ -32,6 +32,25 @@ This addresses several suggestions from the 2.0.0 report: restarts, more than on
 - **Still open:** bugs #2–#7 and #9–#10. Also new: the default `n_climbers` depends on the CPU count, so the same seed gives different searches on different machines.
 - **Most promising fix (tested by patching):** move only on improvement, plus a patience of about 8. On rosenbrock this brought 3.0.0 back to 2.0.0's level. The edge seeding still needs fixing for smooth landscapes like sphere.
 
+## Overall verdict: did 3.0.0 underperform?
+
+**As an optimizer, yes. As software, no: the engineering improved.**
+
+| Area | 3.0.0 vs 2.0.0 | Evidence |
+|---|---|---|
+| Large synthetic grids (65k–1M points) | **Much worse** | Lost to random search in 68 of 80 paired runs at 200 evaluations, and to 2.0.0 in 72 of 80 |
+| Real 103,680-config model | **Still last; not shown to be worse than 2.0.0** | Test AUC 0.8785 vs 2.0.0's 0.8808. With 5 seeds and a seed-to-seed spread of ±0.005–0.009, this gap is within noise |
+| Speed on big grids | **Much worse** | Bookkeeping per evaluation: 1.5 ms → 2.5 s at 10⁷ points; memory ceiling dropped below 3.4 × 10⁷ points |
+| Small grids (48–1,200 configs) | **About the same** | 11 better, 14 tied, 15 worse out of 40 paired runs; still no edge over random or Optuna |
+| Engineering | **Better** | `fit()` safe to call twice, global early stopping off by default, parallel mode 1.9× faster on an expensive model with identical results |
+
+**Caveats on this verdict:**
+- **Equal evaluation budgets, not equal wall time.** With parallel workers, AGS gets more evaluations per hour than a single-core rival. But random search and Optuna can also be run in parallel, so that is not an advantage unique to AGS.
+- **Only 3 climbers tested.** `n_climbers` was fixed at 3, the default on this 4-core machine. The default on a 16-core machine would be 12. *Interpretation:* likely worse, since the budget is split more ways, but this was not tested.
+- **The regression looks fixable.** In a patched test, moving a climber only when it improves, plus a patience of about 8, brought rosenbrock back to 2.0.0's level (see [Diagnosis](#diagnosis-why-the-swarm-is-worse-on-large-grids)). The swarm idea itself (keeping several regions in play) is what the 2.0.0 report recommended. *Interpretation:* the problem is this release's climber rules, not the swarm idea.
+
+**Suggested framing for the author:** "a regression with a known cause and a tested patch", not just "it's worse".
+
 ## Bug status
 
 | # | 2.0.0 finding | 3.0.0 |
