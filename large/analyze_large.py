@@ -45,6 +45,10 @@ def style(ax):
     ax.tick_params(colors=INK2, labelsize=8)
 
 
+def e(v):
+    return "–" if v != v else f"{v:.1e}"
+
+
 def load_syn(d):
     files = sorted(glob.glob(os.path.join(d, "synthetic_*.csv")))
     if not files:
@@ -79,21 +83,23 @@ if syn is not None:
                       "| Optuna @50 | Optuna @100 | Optuna @200 | Random @200 |",
                       "|---|---|---|---|---|---|---|---|---|"]
         for f, gf in g.groupby("func"):
-            med = lambda m, b, src=gf: src[(src.method == m) & (src.budget == b)].rank_pct.median()
+            def med(m, b, src=gf):
+                v = src[(src.method == m) & (src.budget == b)].rank_pct.median()
+                return v if not np.isnan(v) else float("nan")
             if V3:
                 rf = ref[(ref.func == f) & (ref.gridlabel == gl)] if ref is not None else gf[:0]
                 lines.append(
-                    f"| {f} | {med(AG, 50):.1e} | {med(AG, 100):.1e} | {med(AG, 200):.1e} "
-                    f"| {med('ags_1_climber', 200):.1e} | {med(REF_KEY, 200, rf):.1e} "
-                    f"| {med('optuna_tpe', 50):.1e} | {med('optuna_tpe', 100):.1e} "
-                    f"| {med('optuna_tpe', 200):.1e} | {med('random', 200):.1e} |")
+                    f"| {f} | {e(med(AG, 50))} | {e(med(AG, 100))} | {e(med(AG, 200))} "
+                    f"| {e(med('ags_1_climber', 200))} | {e(med(REF_KEY, 200, rf))} "
+                    f"| {e(med('optuna_tpe', 50))} | {e(med('optuna_tpe', 100))} "
+                    f"| {e(med('optuna_tpe', 200))} | {e(med('random', 200))} |")
             else:
                 fd = final_default[(final_default.func == f) & (final_default.gridlabel == gl)]
                 lines.append(
-                    f"| {f} | {fd.rank_pct.median():.1e} ({fd.n_evals.median():.0f}) "
-                    f"| {med(AG, 50):.1e} | {med(AG, 100):.1e} | {med(AG, 200):.1e} "
-                    f"| {med('optuna_tpe', 50):.1e} | {med('optuna_tpe', 100):.1e} "
-                    f"| {med('optuna_tpe', 200):.1e} | {med('random', 200):.1e} |")
+                    f"| {f} | {e(fd.rank_pct.median())} ({fd.n_evals.median():.0f}) "
+                    f"| {e(med(AG, 50))} | {e(med(AG, 100))} | {e(med(AG, 200))} "
+                    f"| {e(med('optuna_tpe', 50))} | {e(med('optuna_tpe', 100))} "
+                    f"| {e(med('optuna_tpe', 200))} | {e(med('random', 200))} |")
         lines.append("")
 
     rivals = [("optuna_tpe", "Optuna", syn), ("random", "Random", syn)]

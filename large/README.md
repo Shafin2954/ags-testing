@@ -50,11 +50,11 @@ Grids: 16⁴ = 65,536; 10⁶ = 1,000,000; 8⁸ = 16,777,216.
 
 **Metric:** the fraction of the whole grid that is strictly better than the pick. 0 means the global optimum; 10⁻³ means the pick is in the top 0.1%. Lower is better.
 
-![synthetic](results/synthetic.png)
+![synthetic](results/v2.0.0/synthetic.png)
 
 *Median over 10 seeds. The dot marks AGS with default settings, where it stopped early.*
 
-Full tables: [`results/synthetic_summary.md`](results/synthetic_summary.md). Pooled paired result, AGS (no early stop) vs each rival, 120 runs per budget:
+Full tables: [`results/v2.0.0/synthetic_summary.md`](results/v2.0.0/synthetic_summary.md). Pooled paired result, AGS (no early stop) vs each rival, 120 runs per budget:
 
 | evaluations | vs Optuna W/T/L | vs Random W/T/L |
 |---|---|---|
@@ -84,7 +84,7 @@ max_iter           50 100 200
 
 The grid is too large to search exhaustively, so the score is the held-out ROC AUC of each method's pick. There were 5 seeds and 150 evaluations; the pick was also recorded at 25, 50 and 100.
 
-![real](results/real_large.png)
+![real](results/v2.0.0/real_large.png)
 
 | method | @25 | @50 | @100 | @150 | folds | wall s |
 |---|---|---|---|---|---|---|
@@ -93,7 +93,7 @@ The grid is too large to search exhaustively, so the score is the held-out ROC A
 | Random | 0.8781 | 0.8790 | 0.8818 | 0.8832 ± 0.0030 | 750 | 175 |
 | AGS default | stopped at ~21 evals: 0.8733 | | | | 102 | 29 |
 
-Every pick and its parameters are listed in [`results/real_large_summary.md`](results/real_large_summary.md).
+Every pick and its parameters are listed in [`results/v2.0.0/real_large_summary.md`](results/v2.0.0/real_large_summary.md).
 
 What it shows:
 - 5 seeds is few, so read the ordering with care. Still, Optuna led at every budget, by margins about as large as or larger than the seed-to-seed spread.

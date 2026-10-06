@@ -103,7 +103,8 @@ for ax, task in zip(axes, tasks):
     for s in ["left", "bottom"]:
         ax.spines[s].set_color(GRIDC)
     ax.tick_params(colors=INK2, labelsize=8)
-    ymax = c[c.t >= 8].groupby(["method", "t"]).regret.mean().max()
+    shown = [k for k, _, _ in SERIES]
+    ymax = c[(c.t >= 8) & c.method.isin(shown)].groupby(["method", "t"]).regret.mean().max()
     ax.set_ylim(0, ymax * 1.1 if ymax > 0 else 1)
 axes[0].set_ylabel("mean regret vs grid optimum\n(lower is better)", color=INK2, fontsize=9)
 axes[0].legend(frameon=False, fontsize=8, labelcolor=INK)

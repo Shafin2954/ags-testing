@@ -3,6 +3,14 @@
 Package: [pypi.org/project/adaptive-greedy-search](https://pypi.org/project/adaptive-greedy-search/) (import name `ags`), author Mohammad Jawad Hasan.
 Tested on 2026-09-25. Environment: cloud Linux container, 4 CPU, no GPU. Python 3.11, scikit-learn 1.9.1, numpy 2.4.6, Optuna 5.0.0.
 
+> **Update 2026-10-06: version 3.0.0 re-tested. Full report: [RETEST_3.0.0.md](RETEST_3.0.0.md).**
+> - **Fixed in 3.0.0:** refit state (#1), `initial_points` crash (#8). Global early stopping is now off by default. Parallel evaluation works (1.9× with 3 workers on an expensive model).
+> - **Not improved:** search quality on small grids is about the same as 2.0.0. On large grids it is much worse: 3.0.0 lost to random search in 68 of 80 synthetic runs, and came last on the real 103,680-config task (AUC 0.8785).
+> - **Diagnosed causes:** climbers move downhill, retire after 3 misses, start on the grid's edges, and rarely refine around the best point (over 90% of evaluations are 6+ steps away from it). Per-evaluation overhead now grows with grid size (2.5 s at 10⁷ points).
+> - **Still open:** bugs #2–#7, #9, #10. New: the default `n_climbers` depends on the machine's CPU count.
+>
+> The rest of this page is the original 2.0.0 report. Its result files now live in `results/v2.0.0/` and `large/results/v2.0.0/`. The test suite in `tests/` now targets 3.0.0.
+
 ## TL;DR
 
 - **Works.** Core search is correct: with full budget and no pruning it returns exactly what `GridSearchCV` returns (tested config by config).
@@ -17,7 +25,7 @@ Tested on 2026-09-25. Environment: cloud Linux container, 4 CPU, no GPU. Python 
 |---|---|
 | API and correctness | `tests/test_ags.py`: 13 passing tests + 9 `xfail(strict=True)` bug tests |
 | Search quality | `bench/run_benchmark.py`: 4 tasks × 10 seeds × 6 methods + full grid |
-| Report | `bench/analyze.py` → `results/summary.md`, `results/pairwise.md`, `results/anytime.png` |
+| Report | `bench/analyze.py` → `results/v2.0.0/summary.md`, `results/v2.0.0/pairwise.md`, `results/v2.0.0/anytime.png` |
 
 Run it yourself:
 
@@ -95,9 +103,9 @@ What held up:
 | random | 200 / 4.5 | 300 / 1.4 | 200 / 16.6 | 120 / 1.8 |
 | optuna_tpe | 200 / 5.5 | 300 / 1.7 | 200 / 22.9 | 120 / 1.9 |
 
-Full tables with standard deviations, held-out test scores and hit-optimum counts: [`results/summary.md`](results/summary.md). Per-seed win/tie/loss: [`results/pairwise.md`](results/pairwise.md).
+Full tables with standard deviations, held-out test scores and hit-optimum counts: [`results/v2.0.0/summary.md`](results/v2.0.0/summary.md). Per-seed win/tie/loss: [`results/v2.0.0/pairwise.md`](results/v2.0.0/pairwise.md).
 
-![anytime regret](results/anytime.png)
+![anytime regret](results/v2.0.0/anytime.png)
 
 *Mean regret of the current pick after t unique evaluations. Curves can rise because each method picks its winner by its own (noisy) CV score, not the reference score. The dot marks where AGS with default settings stopped.*
 
@@ -123,7 +131,7 @@ The bug fixes above make AGS *reliable*. They don't make it *competitive*. This 
 
 ### Where the method loses today (measured)
 
-- **It only searches around one point.** After the 8 random starts, every evaluation is a neighbour of the single current best point (or, when those are all checked, of the rings 2–4 steps out). In 8 dimensions, over 90% of evaluations stayed within 2 steps of the current best, and none went more than 3 steps away ([`large/results/locality.md`](large/results/locality.md)). It climbs whichever hill it starts on.
+- **It only searches around one point.** After the 8 random starts, every evaluation is a neighbour of the single current best point (or, when those are all checked, of the rings 2–4 steps out). In 8 dimensions, over 90% of evaluations stayed within 2 steps of the current best, and none went more than 3 steps away ([`large/results/v2.0.0/locality.md`](large/results/v2.0.0/locality.md)). It climbs whichever hill it starts on.
 - **Early stopping counts any 5 misses in a row.** The run stops after 5 consecutive evaluations that don't strictly beat the best score. Pruned candidates and ties count as misses. The best point has 14 direct neighbours in 7 dimensions, so AGS can quit after checking only 5 of them. Measured stops: a median of 16–27 evaluations in total.
 - **For comparison, Optuna's TPE** (checked in the Optuna 5.0 source) starts with 10 random trials. After that, each round it draws 24 candidates around *all* of its top ~10% of trials and picks the one the good/bad density ratio favours most. Several promising regions stay in play at once. That is why it recovered from bad starts where AGS did not.
 
@@ -174,12 +182,14 @@ What would count as a clear win:
 
 ```
 ags-testing/
-  README.md             this report
-  requirements.txt
-  tests/test_ags.py     pytest suite (13 pass + 9 strict-xfail bug tests)
-  bench/tasks.py        benchmark task definitions
-  bench/run_benchmark.py
-  bench/analyze.py
-  results/              truth tables, runs.csv, curves.csv, summary, plot, log
-  large/                round 2: scaling probe, synthetic + real large-space benchmarks
+  README.md                this report (2.0.0) + pointer to the 3.0.0 re-test
+  RETEST_3.0.0.md          3.0.0 re-test report
+  requirements.txt         pins the version under test (now 3.0.0)
+  tests/test_ags.py        pytest suite for 3.0.0 (20 pass + 8 strict-xfail bug tests)
+  bench/                   small-grid benchmark, analysis, parallel speed check
+  results/v2.0.0/          small-grid results for 2.0.0
+  results/v3.0.0/          small-grid results for 3.0.0
+  large/                   large spaces: scaling, synthetic, real model, locality, v3 diagnosis
+  large/results/v2.0.0/    large-space results for 2.0.0
+  large/results/v3.0.0/    large-space results for 3.0.0
 ```

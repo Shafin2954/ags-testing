@@ -1,0 +1,42 @@
+grid 16^4 = 65,536 done in 168s
+budget                         50       100      200
+func        method                                  
+low_eff_dim ags_1_climber 6.05e-02 4.30e-02 2.54e-02
+            ags_default   9.18e-02 2.73e-02 1.95e-02
+            optuna_tpe    1.95e-03 1.95e-03 3.91e-03
+            random        1.95e-02 7.81e-03 5.86e-03
+rastrigin   ags_1_climber 3.70e-02 1.70e-02 1.02e-02
+            ags_default   3.23e-02 2.58e-02 1.37e-02
+            optuna_tpe    1.42e-03 1.75e-04 1.53e-05
+            random        1.04e-02 6.31e-03 4.33e-03
+rosenbrock  ags_1_climber 3.09e-02 2.38e-02 1.37e-02
+            ags_default   4.33e-02 3.70e-02 3.62e-02
+            optuna_tpe    5.57e-04 1.30e-04 1.53e-05
+            random        1.62e-02 1.21e-02 4.02e-03
+sphere      ags_1_climber 1.10e-01 7.68e-02 2.89e-02
+            ags_default   1.52e-01 9.59e-02 6.36e-02
+            optuna_tpe    3.28e-04 2.14e-04 7.63e-05
+            random        2.85e-02 1.75e-02 7.26e-03
+/usr/local/lib/python3.11/dist-packages/joblib/externals/loky/backend/resource_tracker.py:444: UserWarning: resource_tracker: There appear to be 10 leaked semlock objects to clean up at shutdown: {'/loky-1330-y4ch7o8h': 1, '/loky-1330-591p38yy': 1, '/loky-1330-y4it6opl': 1, '/loky-1330-eb4g1g4j': 1, '/loky-1330-bx87xej0': 1, '/loky-1330-rqh2fmsf': 1, '/loky-1330-57czjg1c': 1, '/loky-1330-5y1xl0y_': 1, '/loky-1330-nehw1bga': 1, '/loky-1330-nwx3zx06': 1}
+  warnings.warn(
+/usr/local/lib/python3.11/dist-packages/joblib/externals/loky/backend/resource_tracker.py:444: UserWarning: resource_tracker: There appear to be 3 leaked folder objects to clean up at shutdown: {'/dev/shm/joblib_memmapping_folder_1330_2a560746201c4d17934047c7b4651c38_c3c7b3f545bc4d16848bbc55689a5748': 1, '/dev/shm/joblib_memmapping_folder_1330_091d97716e2148b88b8ff406fa702bda_77be289d866447c5ad7ecbf98932c05b': 1, '/dev/shm/joblib_memmapping_folder_1330_2a560746201c4d17934047c7b4651c38_668be52ff2134948a93bb3daf22df8cb': 1}
+  warnings.warn(
+/usr/local/lib/python3.11/dist-packages/joblib/externals/loky/backend/resource_tracker.py:444: UserWarning: resource_tracker: There appear to be 10 leaked semlock objects to clean up at shutdown: {'/loky-2289-8xvs1ryt': 1, '/loky-2289-5oy0m0ep': 1, '/loky-2289-opfo8slq': 1, '/loky-2289-wgqyqza9': 1, '/loky-2289-o7wub51u': 1, '/loky-2289-rghug538': 1, '/loky-2289-9f1pozts': 1, '/loky-2289-mm9i2frn': 1, '/loky-2289-qryht95g': 1, '/loky-2289-mkxen9xt': 1}
+  warnings.warn(
+/usr/local/lib/python3.11/dist-packages/joblib/externals/loky/backend/resource_tracker.py:444: UserWarning: resource_tracker: There appear to be 2 leaked folder objects to clean up at shutdown: {'/dev/shm/joblib_memmapping_folder_2289_b8d39aa292334531b236b60b2e1d05bd_af7099aaf0064521b379a2944ca35b30': 1, '/dev/shm/joblib_memmapping_folder_2289_b8d39aa292334531b236b60b2e1d05bd_3994d2fdd4254bbea46b4f278fc7a6bd': 1}
+  warnings.warn(
+grid 10^6 = 1,000,000 done in 1302s
+budget                       50       100      200
+func        method                                
+low_eff_dim ags_default 1.00e-01 5.50e-02 4.00e-02
+            optuna_tpe  0.00e+00 0.00e+00 0.00e+00
+            random      1.00e-02 1.00e-02 0.00e+00
+rastrigin   ags_default 7.12e-02 3.13e-02 3.13e-02
+            optuna_tpe  1.64e-04 3.00e-06 1.00e-06
+            random      1.04e-02 8.03e-03 3.49e-03
+rosenbrock  ags_default 4.73e-02 2.87e-02 2.87e-02
+            optuna_tpe  3.96e-04 1.10e-05 3.00e-06
+            random      2.10e-02 9.60e-03 3.91e-03
+sphere      ags_default 2.43e-02 1.93e-02 1.93e-02
+            optuna_tpe  3.83e-04 1.50e-06 2.00e-06
+            random      1.17e-02 6.36e-03 4.70e-03

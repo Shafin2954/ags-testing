@@ -20,7 +20,8 @@ from joblib import Parallel, delayed
 import synthetic_bench as b
 
 OUT = os.path.join(os.path.dirname(__file__), "results", f"v{b.AGS_VERSION}")
-GRIDS = [(4, 16), (8, 8)]
+# v3.0.0 is too slow on the 16.7M-point grid (see scaling probe), so only 16^4 there.
+GRIDS = [(4, 16)] if b.AGS_V3 else [(4, 16), (8, 8)]
 SEEDS = 10
 BUDGET = 200
 CAP = 6  # distances >= CAP are pooled
