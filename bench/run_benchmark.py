@@ -35,7 +35,14 @@ from sklearn.model_selection import KFold, StratifiedKFold, cross_val_score
 
 from tasks import TASKS, grid_size
 
-RESULTS = os.path.join(os.path.dirname(__file__), "..", "results")
+import ags
+
+AGS_VERSION = ags.__version__
+AGS_V3 = int(AGS_VERSION.split(".")[0]) >= 3
+# v3: fix swarm size (default = 75% of CPU cores, i.e. machine-dependent) and run
+# in-process; every method gets one core per run, seeds run in parallel instead.
+AGS_EXTRA = dict(n_jobs=1, n_climbers=3) if AGS_V3 else {}
+RESULTS = os.path.join(os.path.dirname(__file__), "..", "results", f"v{AGS_VERSION}")
 BUDGETS = {"svc_digits": 40, "tree_cancer": 60, "hgb_synth": 40, "knn_housing": 24}
 REF_CV_SEED = 12345
 
@@ -88,7 +95,7 @@ def run_ags(task, seed, budget, **kw):
     Xtr, _, ytr, _ = task["data"]
     s = AdaptiveGreedySearch(task["estimator"], task["grid"], cv=5,
                              scoring=task["scoring"], max_evaluations=budget,
-                             random_state=seed, **kw)
+                             random_state=seed, **{**AGS_EXTRA, **kw})
     t0 = time.perf_counter()
     s.fit(Xtr, ytr)
     wall = time.perf_counter() - t0
@@ -137,7 +144,7 @@ def run_optuna(task, seed, budget):
     return trace, time.perf_counter() - t0
 
 
-METHODS = {
+METHODS_V2 = {
     "ags_default": lambda t, s, b: run_ags(t, s, b),
     "ags_no_early_stop": lambda t, s, b: run_ags(t, s, b, early_stopping_patience=None),
     "ags_no_prune_no_stop": lambda t, s, b: run_ags(t, s, b, early_stopping_patience=None,
@@ -147,6 +154,16 @@ METHODS = {
     "random": run_random,
     "optuna_tpe": run_optuna,
 }
+# v3: global early stopping is off by default, so "default" == "no early stop".
+METHODS_V3 = {
+    "ags_default": lambda t, s, b: run_ags(t, s, b),
+    "ags_1_climber": lambda t, s, b: run_ags(t, s, b, n_climbers=1),
+    "ags_no_prune": lambda t, s, b: run_ags(t, s, b, pruning_strategy="none"),
+    "ags_gp": lambda t, s, b: run_ags(t, s, b, surrogate_type="gp"),
+    "random": run_random,
+    "optuna_tpe": run_optuna,
+}
+METHODS = METHODS_V3 if AGS_V3 else METHODS_V2
 
 
 def _job(name, method, seed, budget):

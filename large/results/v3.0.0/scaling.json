@@ -1,0 +1,74 @@
+[
+ {
+  "dims": 3,
+  "levels": 10,
+  "grid": 1000,
+  "status": "ok",
+  "init_s": 0.0003653129999747762,
+  "fit_s": 0.12164297800006807,
+  "per_eval_ms": 1.2164297800006807,
+  "peak_rss_gb": 0.14800262451171875
+ },
+ {
+  "dims": 4,
+  "levels": 10,
+  "grid": 10000,
+  "status": "ok",
+  "init_s": 0.0020159609999836903,
+  "fit_s": 0.45775716200000716,
+  "per_eval_ms": 4.577571620000072,
+  "peak_rss_gb": 0.14986038208007812
+ },
+ {
+  "dims": 5,
+  "levels": 10,
+  "grid": 100000,
+  "status": "ok",
+  "init_s": 0.08175703300003079,
+  "fit_s": 3.946814080999957,
+  "per_eval_ms": 39.46814080999957,
+  "peak_rss_gb": 0.16833877563476562
+ },
+ {
+  "dims": 6,
+  "levels": 10,
+  "grid": 1000000,
+  "status": "ok",
+  "init_s": 0.13196226799993838,
+  "fit_s": 28.14991743799999,
+  "per_eval_ms": 281.4991743799999,
+  "peak_rss_gb": 0.3516578674316406
+ },
+ {
+  "dims": 4,
+  "levels": 32,
+  "grid": 1048576,
+  "status": "ok",
+  "init_s": 0.13081870200005596,
+  "fit_s": 19.788271787999975,
+  "per_eval_ms": 197.88271787999977,
+  "peak_rss_gb": 0.32944488525390625
+ },
+ {
+  "dims": 7,
+  "levels": 10,
+  "grid": 10000000,
+  "status": "ok",
+  "init_s": 4.675638554999978,
+  "fit_s": 245.80625608800005,
+  "per_eval_ms": 2458.0625608800005,
+  "peak_rss_gb": 2.240814208984375
+ },
+ {
+  "dims": 5,
+  "levels": 32,
+  "grid": 33554432,
+  "status": "FAIL: numpy._core._exceptions._ArrayMemoryError: Unable to allocate 256. MiB for an ar"
+ },
+ {
+  "dims": 8,
+  "levels": 10,
+  "grid": 100000000,
+  "status": "FAIL: MemoryError"
+ }
+]

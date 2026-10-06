@@ -32,7 +32,13 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 
-OUT = os.path.join(os.path.dirname(__file__), "results")
+import ags as _ags
+
+AGS_VERSION = _ags.__version__
+AGS_V3 = int(AGS_VERSION.split(".")[0]) >= 3
+# v3: fix swarm size (default depends on CPU count) and evaluate in-process.
+AGS_EXTRA = dict(n_jobs=1, n_climbers=3) if AGS_V3 else {}
+OUT = os.path.join(os.path.dirname(__file__), "results", f"v{AGS_VERSION}")
 SIGMA = 0.05
 GRIDS = [(4, 16), (6, 10), (8, 8)]          # (dims, levels): 65k, 1M, 16.7M points
 FUNCS = ["sphere", "rosenbrock", "rastrigin", "low_eff_dim"]
@@ -107,7 +113,8 @@ def run_ags(F, seed, budget, **kw):
     grid = {f"p{i}": list(range(L)) for i in range(d)}
     X, y = np.arange(5, dtype=float).reshape(-1, 1), np.zeros(5)
     s = AdaptiveGreedySearch(Fake(**{k: 0 for k in grid}), grid, cv=5, scoring=scorer,
-                             max_evaluations=budget, random_state=seed, **kw)
+                             max_evaluations=budget, random_state=seed,
+                             **{**AGS_EXTRA, **kw})
     # Force fold i to be exactly row i so the scorer knows the fold index.
     from sklearn.model_selection import KFold
     s._cv_splitter = KFold(5)
@@ -150,6 +157,13 @@ METHODS = {
     "random": run_random,
     "optuna_tpe": run_optuna,
 }
+if AGS_V3:  # global early stopping is off by default in v3
+    METHODS = {
+        "ags_default": lambda F, s, b: run_ags(F, s, b),
+        "ags_1_climber": lambda F, s, b: run_ags(F, s, b, n_climbers=1),
+        "random": run_random,
+        "optuna_tpe": run_optuna,
+    }
 
 
 def job(func, d, L, method, seed):
@@ -176,11 +190,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--seeds", type=int, default=10)
     ap.add_argument("--n-jobs", type=int, default=os.cpu_count())
+    ap.add_argument("--grids", nargs="*", default=[f"{d}x{L}" for d, L in GRIDS],
+                    help="dims x levels, e.g. 4x16 6x10 8x8")
+    ap.add_argument("--methods", nargs="*", default=list(METHODS))
     args = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
-    for d, L in GRIDS:
+    for g in args.grids:
+        d, L = (int(v) for v in g.split("x"))
         t0 = time.time()
-        jobs = [(f, d, L, m, s) for f in FUNCS for m in METHODS for s in range(args.seeds)]
+        jobs = [(f, d, L, m, s) for f in FUNCS for m in args.methods
+                for s in range(args.seeds)]
         # 16.7M-point grids: AGS holds ~1.8 GB each, so fewer workers.
         n = args.n_jobs if L ** d < 5_000_000 else 2
         res = Parallel(n_jobs=n)(delayed(job)(*j) for j in jobs)

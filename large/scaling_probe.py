@@ -31,6 +31,8 @@ class Fake(BaseEstimator, RegressorMixin):
     def predict(self, X): return np.zeros(len(X))
 
 dims, levels, evals = int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3])
+import ags
+extra = dict(n_jobs=1, n_climbers=3) if int(ags.__version__.split(".")[0]) >= 3 else {}
 grid = {f"p{i}": list(range(levels)) for i in range(dims)}
 def scorer(est, X, y):
     return -sum((getattr(est, f"p{i}") - levels / 3) ** 2 for i in range(dims))
@@ -39,7 +41,7 @@ X, y = np.zeros((20, 1)), np.zeros(20)
 t0 = time.perf_counter()
 s = AdaptiveGreedySearch(Fake(**{k: 0 for k in grid}), grid, cv=2, scoring=scorer,
                          max_evaluations=evals, early_stopping_patience=None,
-                         pruning_strategy="none")
+                         pruning_strategy="none", **extra)
 t_init = time.perf_counter() - t0
 t0 = time.perf_counter()
 s.fit(X, y)
@@ -71,6 +73,7 @@ if __name__ == "__main__":
         r = run(dims, levels)
         print(r, flush=True)
         rows.append(r)
-    os.makedirs(os.path.join(os.path.dirname(__file__), "results"), exist_ok=True)
-    json.dump(rows, open(os.path.join(os.path.dirname(__file__), "results", "scaling.json"), "w"),
-              indent=1)
+    import ags
+    out = os.path.join(os.path.dirname(__file__), "results", f"v{ags.__version__}")
+    os.makedirs(out, exist_ok=True)
+    json.dump(rows, open(os.path.join(out, "scaling.json"), "w"), indent=1)

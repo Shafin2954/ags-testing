@@ -1,4 +1,4 @@
-# Large-space synthetic benchmark
+# Large-space synthetic benchmark (AGS 2.0.0)
 
 Median over 10 seeds of the **rank percentile** of each method's pick: the fraction of the whole grid that is strictly better (0 = global optimum; 1e-3 = top 0.1%). Lower is better. Fold noise sigma = 0.05 grid-std.
 

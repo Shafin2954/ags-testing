@@ -1,0 +1,48 @@
+[svc_digits] grid=121 budget=40 truth ready (0s)
+               regret    test  n_evals  folds     wall
+method                                                
+ags_1_climber  0.0021  0.9908     40.0  174.7   3.7377
+ags_default    0.0015  0.9920     40.0  194.4   4.2598
+ags_gp         0.0011  0.9912     40.0  185.1   5.0026
+ags_no_prune   0.0015  0.9920     40.0  200.0   4.2783
+grid_search    0.0000  0.9880    121.0  605.0  13.2064
+optuna_tpe     0.0020  0.9900     40.0  200.0   4.6333
+random         0.0027  0.9912     40.0  200.0   4.8656
+[svc_digits] done in 71s
+
+[tree_cancer] grid=1200 budget=60 truth ready (0s)
+               regret    test  n_evals   folds     wall
+method                                                 
+ags_1_climber  0.0073  0.9252     60.0   264.6   1.3655
+ags_default    0.0087  0.9273     60.0   276.8   1.3148
+ags_gp         0.0068  0.9259     60.0   269.6   1.9865
+ags_no_prune   0.0089  0.9280     60.0   300.0   1.7108
+grid_search    0.0000  0.8951   1200.0  6000.0  36.3636
+optuna_tpe     0.0113  0.9238     60.0   300.0   1.5211
+random         0.0056  0.9280     60.0   300.0   1.2732
+[tree_cancer] done in 25s
+
+[hgb_synth] grid=300 budget=40 truth ready (0s)
+               regret    test  n_evals   folds      wall
+method                                                  
+ags_1_climber  0.0050  0.9650     40.0   165.5   12.5436
+ags_default    0.0049  0.9666     40.0   182.0   15.4828
+ags_gp         0.0040  0.9684     40.0   181.7   19.3674
+ags_no_prune   0.0049  0.9666     40.0   200.0   16.8831
+grid_search    0.0000  0.9699    300.0  1500.0  130.0792
+optuna_tpe     0.0037  0.9689     40.0   200.0   22.9497
+random         0.0038  0.9692     40.0   200.0   17.1370
+[hgb_synth] done in 273s
+
+[knn_housing] grid=48 budget=24 truth ready (0s)
+               regret    test  n_evals  folds    wall
+method                                               
+ags_1_climber  0.0104 -0.3317     24.0  109.7  1.5728
+ags_default    0.0084 -0.3350     24.0  116.6  1.5897
+ags_gp         0.0027 -0.3337     24.0  111.7  1.8499
+ags_no_prune   0.0084 -0.3350     24.0  120.0  1.4898
+grid_search    0.0000 -0.3363     48.0  240.0  3.5455
+optuna_tpe     0.0020 -0.3343     24.0  120.0  2.1216
+random         0.0048 -0.3349     24.0  120.0  1.6377
+[knn_housing] done in 27s
+

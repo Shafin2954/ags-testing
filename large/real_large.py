@@ -24,7 +24,13 @@ from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.metrics import get_scorer
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 
-OUT = os.path.join(os.path.dirname(__file__), "results")
+import ags as _ags
+
+AGS_VERSION = _ags.__version__
+AGS_V3 = int(AGS_VERSION.split(".")[0]) >= 3
+# v3: fix swarm size (default depends on CPU count) and evaluate in-process.
+AGS_EXTRA = dict(n_jobs=1, n_climbers=3) if AGS_V3 else {}
+OUT = os.path.join(os.path.dirname(__file__), "results", f"v{AGS_VERSION}")
 SCORING = "roc_auc"
 CHECKPOINTS = [25, 50, 100, 150]
 
@@ -65,7 +71,7 @@ def run_ags(D, seed, budget, **kw):
     from ags import AdaptiveGreedySearch
     Xtr, _, ytr, _ = D
     s = AdaptiveGreedySearch(EST, GRID, cv=5, scoring=SCORING, max_evaluations=budget,
-                             random_state=seed, **kw).fit(Xtr, ytr)
+                             random_state=seed, **{**AGS_EXTRA, **kw}).fit(Xtr, ytr)
     return [(h["state"], h["score"], h["n_folds_used"]) for h in s.history]
 
 
@@ -106,6 +112,13 @@ METHODS = {
     "random": run_random,
     "optuna_tpe": run_optuna,
 }
+if AGS_V3:  # global early stopping is off by default in v3
+    METHODS = {
+        "ags_default": lambda D, s, b: run_ags(D, s, b),
+        "ags_1_climber": lambda D, s, b: run_ags(D, s, b, n_climbers=1),
+        "random": run_random,
+        "optuna_tpe": run_optuna,
+    }
 
 
 def job(method, seed):
@@ -135,13 +148,24 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--seeds", type=int, default=5)
     ap.add_argument("--n-jobs", type=int, default=os.cpu_count())
+    ap.add_argument("--methods", nargs="*", default=list(METHODS))
+    ap.add_argument("--reuse-from", default=None,
+                    help="results version (e.g. 2.0.0) to copy rows for methods not "
+                         "re-run; random/optuna don't depend on AGS and are seeded")
     args = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
     data()  # warm the download cache before forking
     t0 = time.time()
     res = Parallel(n_jobs=args.n_jobs)(
-        delayed(job)(m, s) for s in range(args.seeds) for m in METHODS)
+        delayed(job)(m, s) for s in range(args.seeds) for m in args.methods)
     df = pd.DataFrame([r for rows in res for r in rows])
+    if args.reuse_from:
+        old = pd.read_csv(os.path.join(os.path.dirname(__file__), "results",
+                                       f"v{args.reuse_from}", "real_large.csv"))
+        keep = [m for m in METHODS if m not in args.methods]
+        old = old[old.method.isin(keep) & (old.seed < args.seeds)].assign(
+            reused_from=args.reuse_from)
+        df = pd.concat([df, old], ignore_index=True)
     df.to_csv(os.path.join(OUT, "real_large.csv"), index=False)
     print(f"done in {time.time() - t0:.0f}s")
     print(df.pivot_table(index="method", columns="budget", values="test",

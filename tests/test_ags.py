@@ -1,5 +1,6 @@
 """
-Test suite for adaptive-greedy-search (import name: ags), v2.0.0.
+Test suite for adaptive-greedy-search (import name: ags), v3.0.0.
+(v2.0.0 results are kept in git history and results/v2.0.0/.)
 
 Two groups:
   * Plain tests  -> behaviour that works and must keep working.
@@ -25,6 +26,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 
+import ags as ags_pkg
 from ags import AdaptiveGreedySearch
 
 warnings.filterwarnings("ignore")
@@ -44,6 +46,8 @@ def data():
 
 def ags(**kw):
     kw.setdefault("max_evaluations", 20)
+    kw.setdefault("n_jobs", 1)          # in-process: faster for tiny models
+    kw.setdefault("n_climbers", 3)      # fixed, so results don't depend on the machine
     return AdaptiveGreedySearch(DecisionTreeClassifier(random_state=0), GRID, **kw)
 
 
@@ -144,23 +148,78 @@ def test_unknown_surrogate_rejected():
         ags(surrogate_type="nope")
 
 
-def test_default_early_stopping_uses_well_under_budget(data):
-    """Documents default behaviour: patience=5 usually stops long before budget."""
+def test_global_early_stopping_off_by_default(data):
+    """v3 change: global early stopping is off by default (v2 stopped after 5 misses)."""
     s = ags(max_evaluations=60).fit(*data)
+    assert not s.stopped_early and s.n_evaluations == 60
+
+
+def test_global_early_stopping_still_available(data):
+    s = ags(max_evaluations=60, early_stopping_patience=3).fit(*data)
     assert s.stopped_early and s.n_evaluations < 60
 
 
-# ============================================================ known bugs ====
-
-@pytest.mark.xfail(strict=True, reason="BUG: fit() does not reset state; second "
-                   "fit on new data reuses scores from the old data")
 def test_refit_on_new_data_starts_fresh(data):
-    s = ags(max_evaluations=10, early_stopping_patience=None)
+    """Was bug #1 in v2.0.0; fixed in v3.0.0."""
+    s = ags(max_evaluations=10)
     s.fit(*data)
     X2, y2 = make_classification(n_samples=300, n_features=12, random_state=99)
     s.fit(X2, y2)
     assert len(s.history) == s.n_evaluations == 10
+    fresh = ags(max_evaluations=10).fit(X2, y2)
+    assert s.best_score == fresh.best_score
 
+
+def test_initial_points_deprecated_and_ignored(data):
+    """Was bug #8 in v2.0.0 (initial_points=0 crashed); v3 deprecates the arg."""
+    with pytest.warns(DeprecationWarning):
+        s = ags(initial_points=0)
+    s.fit(*data)
+    assert s.n_evaluations == 20
+
+
+# --------------------------------------------------------------- v3 swarm ---
+
+def test_parallel_and_sequential_give_identical_results(data):
+    a = ags(max_evaluations=25, n_jobs=1).fit(*data)
+    b = ags(max_evaluations=25, n_jobs=2).fit(*data)
+    assert [h["state"] for h in a.history] == [h["state"] for h in b.history]
+    assert a.best_score == b.best_score
+
+
+def test_swarm_counters_and_climber_ids(data):
+    s = ags(max_evaluations=40, n_climbers=3).fit(*data)
+    assert s.climbers_spawned >= 0 and s.plateau_escapes >= 0
+    ids = {h["climber_id"] for h in s.history}
+    assert {"climber_0", "climber_1", "climber_2"} <= ids
+    assert len(s.climbers) == 3 + s.climbers_spawned
+
+
+def test_first_round_evaluates_one_seed_per_climber(data):
+    s = ags(max_evaluations=40, n_climbers=4).fit(*data)
+    first = [h["climber_id"] for h in s.history[:4]]
+    assert first == ["climber_0", "climber_1", "climber_2", "climber_3"]
+
+
+def test_invalid_n_climbers_rejected():
+    with pytest.raises(ValueError):
+        ags(n_climbers=0)
+
+
+@pytest.mark.xfail(strict=True, reason="GAP (v3): default n_climbers = 75% of CPU "
+                   "cores, so the same random_state gives different searches on "
+                   "machines with different core counts")
+def test_default_is_reproducible_across_machines(data, monkeypatch):
+    runs = []
+    for cores in (2, 16):
+        monkeypatch.setattr(ags_pkg.core, "cpu_count", lambda c=cores: c)
+        s = AdaptiveGreedySearch(DecisionTreeClassifier(random_state=0), GRID,
+                                 max_evaluations=30, n_jobs=1).fit(*data)
+        runs.append([h["state"] for h in s.history])
+    assert runs[0] == runs[1]
+
+
+# ============================================================ known bugs ====
 
 @pytest.mark.xfail(strict=True, reason="GAP: not a sklearn BaseEstimator; "
                    "clone()/get_params()/Pipeline/cross_val_score nesting fail")
@@ -172,12 +231,6 @@ def test_sklearn_clone_compatible():
                    "objects (GroupKFold, TimeSeriesSplit, KFold) raise")
 def test_accepts_cv_splitter_object(data):
     ags(cv=KFold(3)).fit(*data)
-
-
-@pytest.mark.xfail(strict=True, reason="BUG: initial_points=0 -> "
-                   "'max() arg is an empty sequence'")
-def test_initial_points_zero(data):
-    ags(initial_points=0).fit(*data)
 
 
 @pytest.mark.xfail(strict=True, reason="BUG: max_evaluations=0 crashes instead "
@@ -199,7 +252,7 @@ def test_unknown_pruning_strategy_rejected():
 def test_invalid_param_combo_is_skipped(data):
     grid = {"penalty": ["l2", "l1"], "C": [0.1, 1.0, 10.0]}
     s = AdaptiveGreedySearch(LogisticRegression(solver="lbfgs"), grid,
-                             max_evaluations=6).fit(*data)
+                             max_evaluations=6, n_jobs=1, n_climbers=3).fit(*data)
     assert s.best_params["penalty"] == "l2"
 
 
@@ -235,10 +288,16 @@ def test_optimistic_with_callable_scorer_does_not_prune_winner():
         calls[est.cfg] += 1
         return v
 
+    # v3 moved per-candidate evaluation into the module-level worker; call it the
+    # way fit() does, with incumbent "a" = 0.6 already evaluated.
+    from ags.core import _evaluate_worker
     X, y = np.zeros((50, 1)), np.zeros(50)
     s = AdaptiveGreedySearch(_Scripted(), {"cfg": ["a", "b"]}, scoring=scorer,
-                             pruning_strategy="optimistic")
-    s.evaluate((0,), X, y)           # incumbent a = 0.6
-    s.evaluate((1,), X, y)           # b should survive: it ends at 0.8
-    assert s.history[1]["pruned"] is False
-    assert s.evaluated[(1,)] == pytest.approx(0.8)
+                             pruning_strategy="optimistic", n_jobs=1, n_climbers=1)
+    splits = list(KFold(5).split(X, y))
+    res = _evaluate_worker((1,), {"cfg": "b"}, s.estimator, X, y, splits, scorer,
+                           True, "optimistic", 0.0, 25, 2, 10,
+                           incumbent=0.6, score_upper_bound=s.score_upper_bound,
+                           observed_max_fold_score=0.6, partial_mean_history_snapshot={})
+    assert res["pruned"] is False
+    assert res["score"] == pytest.approx(0.8)

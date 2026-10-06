@@ -19,7 +19,7 @@ from joblib import Parallel, delayed
 
 import synthetic_bench as b
 
-OUT = os.path.join(os.path.dirname(__file__), "results")
+OUT = os.path.join(os.path.dirname(__file__), "results", f"v{b.AGS_VERSION}")
 GRIDS = [(4, 16), (8, 8)]
 SEEDS = 10
 BUDGET = 200
@@ -35,11 +35,13 @@ def one(func, d, L, seed):
     warnings.filterwarnings("ignore")
     F = b.landscape(func, d, L)
     trace = b.run_ags(F, seed, BUDGET, early_stopping_patience=None)
+    # v3 evaluates n_climbers seeds first; v2 evaluates 8 random initial points.
+    n_init = 3 if b.AGS_V3 else 8
     dists, best, best_score = [], None, -np.inf
     for i, (s, score, _) in enumerate(trace):
-        if i >= 8:  # skip AGS's 8 random initial points
+        if i >= n_init:  # skip the initial seeds
             dists.append(min(sum(abs(x - y) for x, y in zip(s, best)), CAP))
-        if score > best_score:
+        if score > best_score:  # current GLOBAL best (across all climbers in v3)
             best_score, best = score, s
     return func, d, L, dists
 
@@ -54,7 +56,8 @@ def main():
     cols = list(range(1, CAP + 1))
     lines = ["# Locality probe", "",
              f"AGS with early stopping off, {BUDGET} evaluations, {SEEDS} seeds per row. "
-             "Share of evaluations (after the 8 random starts) by grid distance from the "
+             "Share of evaluations (after the initial seeds: 8 random points in v2, one per "
+             "climber in v3) by grid distance from the "
              "current best point.", "",
              "| grid | landscape | " + " | ".join(
                  f"{c}{'+' if c == CAP else ''} step{'s' if c > 1 else ''}" for c in cols) + " |",

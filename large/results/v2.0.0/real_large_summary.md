@@ -1,4 +1,4 @@
-# Large real space: HistGradientBoosting on Covertype (103,680 configs)
+# Large real space: HistGradientBoosting on Covertype (103,680 configs), AGS 2.0.0
 
 Held-out ROC AUC (10,000 unseen rows) of each method's pick. Mean ± sd over seeds.
 

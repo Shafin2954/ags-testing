@@ -14,12 +14,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-R = os.path.join(os.path.dirname(__file__), "..", "results")
+import sys
+
+import ags
+
+VERSION = sys.argv[1] if len(sys.argv) > 1 else ags.__version__
+R = os.path.join(os.path.dirname(__file__), "..", "results", f"v{VERSION}")
+V3 = int(VERSION.split(".")[0]) >= 3
 runs = pd.read_csv(os.path.join(R, "runs.csv"))
 curves = pd.read_csv(os.path.join(R, "curves.csv"))
 
-ORDER = ["grid_search", "ags_default", "ags_no_early_stop", "ags_no_prune_no_stop",
-         "ags_gp_no_stop", "random", "optuna_tpe"]
+ORDER = ["grid_search", "ags_default", "ags_1_climber", "ags_no_early_stop", "ags_no_prune",
+         "ags_no_prune_no_stop", "ags_gp", "ags_gp_no_stop", "random", "optuna_tpe"]
 
 
 def fmt(m, s, d=4):
@@ -53,7 +59,7 @@ pw = ["# AGS vs rivals, paired by seed", "",
       "W = AGS better, T = tie (same score), L = AGS worse.", "",
       "| task | AGS variant | vs | W | T | L |", "|---|---|---|---|---|---|"]
 for task, g in runs.groupby("task", sort=False):
-    for a in ["ags_default", "ags_no_early_stop"]:
+    for a in (["ags_default", "ags_1_climber"] if V3 else ["ags_default", "ags_no_early_stop"]):
         for b in ["random", "optuna_tpe"]:
             A = g[g.method == a].set_index("seed").regret
             B = g[g.method == b].set_index("seed").regret
@@ -63,11 +69,14 @@ for task, g in runs.groupby("task", sort=False):
 open(os.path.join(R, "pairwise.md"), "w").write("\n".join(pw) + "\n")
 
 # ---- anytime regret curves -------------------------------------------------
-SERIES = [("ags_no_early_stop", "AGS (no early stop)", "#2a78d6"),
+SERIES = [(("ags_default", f"AGS {VERSION} (3 climbers)", "#2a78d6") if V3 else
+           ("ags_no_early_stop", "AGS (no early stop)", "#2a78d6")),
           ("optuna_tpe", "Optuna TPE", "#eb6834"),
           ("random", "Random search", "#1baf7a")]
 INK, INK2, GRIDC = "#0b0b0b", "#52514e", "#e4e3df"
 
+v2p = os.path.join(R, "..", "v2.0.0", "curves.csv")
+v2_curves = pd.read_csv(v2p) if os.path.exists(v2p) else None
 tasks = list(runs.task.unique())
 fig, axes = plt.subplots(1, len(tasks), figsize=(4.2 * len(tasks), 3.6), dpi=150)
 axes = np.atleast_1d(axes)
@@ -76,9 +85,15 @@ for ax, task in zip(axes, tasks):
     for key, label, col in SERIES:
         m = c[c.method == key].groupby("t").regret.mean()
         ax.plot(m.index, m.values, color=col, lw=2, label=label)
-    d = runs[(runs.task == task) & (runs.method == "ags_default")]
-    ax.plot(d.n_evals.mean(), d.regret.mean(), "o", ms=8, color="#2a78d6",
-            mec="white", mew=2, label="AGS default (stops early)")
+    if V3 and v2_curves is not None:
+        m = v2_curves[(v2_curves.task == task) & (v2_curves.method == "ags_no_early_stop")]
+        m = m.groupby("t").regret.mean()
+        ax.plot(m.index, m.values, color="#8a8984", lw=1.5, ls="--",
+                label="AGS 2.0.0 (no early stop)")
+    if not V3:
+        d = runs[(runs.task == task) & (runs.method == "ags_default")]
+        ax.plot(d.n_evals.mean(), d.regret.mean(), "o", ms=8, color="#2a78d6",
+                mec="white", mew=2, label="AGS default (stops early)")
     ax.set_title(task, color=INK, fontsize=11, loc="left")
     ax.set_xlabel("unique configs evaluated", color=INK2, fontsize=9)
     ax.grid(True, color=GRIDC, lw=0.8)
